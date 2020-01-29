@@ -1,0 +1,11 @@
+export ORACLE_BASE=/u01/app/oracle
+export LISTENER_LOG=${ORACLE_BASE}/diag/tnslsnr/localhost/listener/trace/listener.log
+export LISTENER_LOG_BAK=${LISTENER_LOG}_bak
+
+LSNR=`diff ${LISTENER_LOG} ${LISTENER_LOG_BAK}|awk '/TNS-/ {print $2}'|head -n1`
+if [ `echo $LSNR|wc -m` -lt 2 ]; then LSNR=0;fi
+
+echo $LSNR
+#make backups
+rm ${LISTENER_LOG_BAK}
+cp ${LISTENER_LOG} ${LISTENER_LOG_BAK}

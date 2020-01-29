@@ -1,0 +1,40 @@
+#Databases		
+0~1~0~if [ $(echo -e "SET PAGESIZE 0 FEEDBACK OFF; \n select instance_name from v\$instance;"|sqlplus -s system/password@DB1|head -n1) == 'DB1' ]; then echo 0; else echo 1;fi~ if DB1 is open
+0~1~0~if [ $(echo -e "SET PAGESIZE 0 FEEDBACK OFF; \n select instance_name from v\$instance;"|sqlplus -s system/password@DB2|head -n1) == 'DB2' ]; then echo 0; else echo 1;fi~ if DB2 is open
+#
+#
+##Shareplex
+1~1~1~if sp_ctrl status 2> /dev/null|grep -q "Running" ; then echo 0 ; else echo 1; fi~Check if sp_cop is responsive
+1~2~1~if [ $(sp_ctrl status 2>/dev/null|tail -n+5|head -n-5|grep -i capture|awk '{ print $2 }'|grep -i stopped|wc -l) 2>/dev/null -eq 0 ]; then echo 0; else echo 1; fi~Check if capture state is running
+1~2~1~if [ $(sp_ctrl status 2>/dev/null|tail -n+5|head -n-5|grep -i read|awk '{ print $2 }'|grep -i stopped|wc -l) 2>/dev/null  -eq 0 ]; then echo 0; else echo 1; fi~Check if read state is running
+1~2~1~if [ $(sp_ctrl status 2>/dev/null|tail -n+5|head -n-5|grep -i export|awk '{ print $2 }'|grep -i stopped|wc -l) 2>/dev/null  -eq 0 ]; then echo 0; else echo 1; fi~Check if export state is running
+1~2~1~if [ $(sp_ctrl status 2>/dev/null|tail -n+5|head -n-5|grep -i import|awk '{ print $2 }'|grep -i stopped|wc -l) 2>/dev/null  -eq 0 ]; then echo 0; else echo 1; fi~Check if import state is running
+1~2~1~if [ $(sp_ctrl status 2>/dev/null|tail -n+5|head -n-5|grep -i post|awk '{ print $2 }'|grep -i stopped|wc -l) 2>/dev/null  -eq 0 ]; then echo 0; else echo 1; fi~Check if post state is running
+#
+#
+#Networking;
+2~0~3~if [ $(echo -e "SET PAGESIZE 0 FEEDBACK OFF; \n select ltrim(1) from dual;"|sqlplus -s system/password@DB1|head -n1) 2>/dev/null -eq 1 ]; then echo 0; else echo 1;fi~Check if sqlplus is connectable or not
+2~0~3~if [ $(echo -e "SET PAGESIZE 0 FEEDBACK OFF; \n select ltrim(1) from dual;"|sqlplus -s system/password@DB2|head -n1) 2>/dev/null -eq 1 ]; then echo 0; else echo 1;fi~Check if sqlplus is connectable or not
+#
+#
+#linux OS
+3~1~4~if [ `df -h|grep -i root|awk '{print $5}'|tr -d '%'` -lt 99 ]; then echo 0; else echo 1;fi~check if root partition is full
+3~2~4~if [ `ifconfig enp0s3|grep -i up|wc -l` -eq 1 ]; then echo 0; else echo 1;fi~check if the network card is up
+3~3~4~if [ $(echo "$(free -m|grep -i mem|awk '{ print $3 / $2 }') < 0.9"|bc) -ge 1 ]; then echo 0; else echo 1;fi~check if there is free memory
+
+************************************************************************************************************
+
+[oracle@localhost fddr]$ cat check_all_services.sh
+ORA1_PROCESS=`if [ $(ps aux|grep -i ora_smon_DB1|grep -v grep|wc -l) -eq 1 ]; then echo 0; else echo 1;fi`
+ORA2_PROCESS=`if [ $(ps aux|grep -i ora_smon_DB2|grep -v grep|wc -l) -eq 1 ]; then echo 0; else echo 1;fi`
+SPX1_PROCESS=`if [ $(ps aux|grep -i sp_cop|grep -v grep|wc -l) -eq 1 ]; then echo 0; else echo 1;fi`
+#SPX2_PROCESS=`if [ $(ps aux|grep -i sp_cop|grep -v grep|wc -l) -eq 1 ]; then echo 0; else echo 1;fi`
+LNR1_PROCESS=`if [ $(ps aux|grep -i "tnslsnr LISTENER"|grep -v grep|wc -l) -ge 1 ]; then echo 0; else echo 1;fi`
+#LNR2_PROCESS=`if [ $(ps aux|grep -i "tnslsnr LISTENER"|grep -v grep|wc -l) -ge 1 ]; then echo 0; else echo 1;fi`
+DB1_TNSPING=`if tnsping DB1 2>/dev/null|grep -q -i ok ; then echo 0; else echo 1;fi`
+DB2_TNSPING=`if tnsping DB2 2>/dev/null|grep -q -i ok ; then echo 0; else echo 1;fi`
+OS1_PROCESS=`if ping -c1 localhost 2>/dev/null|grep -q -i icmp ; then echo 0; else echo 1;fi`
+OS2_PROCESS=`if ping -c1 localhost 2>/dev/null|grep -q -i icmp ; then echo 0; else echo 1;fi`
+
+#echo $ORA1_PROCESS~$ORA2_PROCESS~$SPX1_PROCESS~$SPX2_PROCESS~$LNR1_PROCESS~$LNR2_PROCESS~$OS1_PROCESS~$OS2_PROCESS
+echo $ORA1_PROCESS~$ORA2_PROCESS~$SPX1_PROCESS~$LNR1_PROCESS~$DB1_TNSPING~$DB2_TNSPING~$OS1_PROCESS~$OS2_PROCESS

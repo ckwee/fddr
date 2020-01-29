@@ -1,0 +1,155 @@
+from IPython.core.display import display, HTML
+display(HTML("<style>.container { width:100% !important; }</style>"))
+
+import os
+import time
+import shutil
+import difflib
+import subprocess
+import numpy as np
+import datetime
+import re
+import csv
+import system_matrix_lib as sm
+import pickle
+
+PICKLE_FILE = '/home/oracle/fddr/pickle.dat'
+
+def add_to_pickle(path, item):
+    with open(path, 'ab') as file:
+        pickle.dump(item, file, pickle.HIGHEST_PROTOCOL)
+        
+def read_from_pickle(path):
+    with open(path, 'rb') as file:
+        try:
+            while True:
+                yield pickle.load(file)
+        except EOFError:
+            pass
+        
+
+def run_bash(cmd):
+   try:
+      output=subprocess.check_output(['bash','-c',cmd],stderr=subprocess.STDOUT)
+   except subprocess.CalledProcessError as e:
+      raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+   return output
+
+def decomment(csvfile):
+    for row in csvfile:
+        raw = row.split('#')[0].strip()
+        if raw: yield raw       
+
+l1=[]
+#with open('/home/oracle/fddr/system_vector.txt') as csvfile:
+#   readCSV = csv.reader(decomment(csvfile), delimiter='~')
+#   for row in readCSV:
+#      software_type=int(row[0])
+#      software_service_grp=int(row[1])
+#      cmd=row[3]
+#      print(cmd)
+#      a=int(run_bash(cmd))
+#      l1.append(a)
+#print(l1)
+
+#######Check environment first before running just to make sure everything is good to start
+#print(sm.dre_all_logstats()) 
+#print(sm.dre_all_processes()) 
+#print(sm.dre_all_services()) 
+#print(sm.get_system_matrix())
+#print(sm.DRE_diagnostic_metrics())
+
+print (datetime.datetime.now())
+##Environment state, service_action and diagnostics 
+print 'DRE log stats =', sm.dre_all_logstats()
+print 'DRE proc stats=', sm.dre_all_processes()
+print 'Diag service fault=', sm.get_system_matrix()
+print 'DRE diagnose metrics=', sm.DRE_diagnostic_metrics()
+
+#build up a series of break-fix state and actions for NN trainings
+with open('/home/oracle/fddr/breakfix.txt') as csvfile:
+   readCSV = csv.reader(decomment(csvfile), delimiter='~')
+   for row in readCSV:
+      status=row[0]
+      cmd=row[1]
+      print '\n***',status,'****  ',cmd
+      a=run_bash(cmd)
+      #print(a)
+      time.sleep(30)
+      #print 'DRE log stats =', sm.dre_all_logstats()
+      #print 'DRE proc stats=', sm.dre_all_processes()
+      #print 'Diag service fault=', sm.get_system_matrix()
+      #print 'DRE diagnose metrics=', sm.DRE_diagnostic_metrics()                     
+      #output to pickle file for training NN
+      v = []       
+      in_state = sm.dre_all_logstats() + sm.dre_all_processes() + sm.dre_all_services()  
+      out_action = list(np.array(sm.get_system_matrix()).flat)
+      actual_diag = sm.DRE_diagnostic_metrics()
+      print(str(in_state) + ' ** ' + str(out_action) + ' ** ' + str(actual_diag))
+      v.append(in_state)
+      v.append(out_action)
+      v.append(actual_diag)        
+      add_to_pickle(PICKLE_FILE,v)
+
+for item in read_from_pickle(PICKLE_FILE):
+   print(type(item),item)
+
+#os.remove(PICKLE_FILE)           
+                
+print ('***************ok',datetime.datetime.now())
+
+##Read input from pickle file
+df=[]        
+for item in read_from_pickle(PICKLE_FILE):
+   df.append(item)
+
+##read list of state,actoion and diagnostics from pickle file and concat into dataframe
+newdf=1   
+for item in read_from_pickle(PICKLE_FILE):
+    state_df1  = pd.DataFrame(item[0])
+    action_df1 = pd.DataFrame(item[1])
+    diag_df1   = pd.DataFrame(item[2])
+    state_df1  = state_df1.transpose()
+    action_df1 = action_df1.transpose()
+    diag_df1   = diag_df1.transpose()
+    
+    if newdf==1:
+        state_df2 = state_df1
+        action_df2= action_df1
+        diag_df2  = diag_df1
+        newdf=0
+    else:
+        state_df2 = pd.concat([state_df2, state_df1])
+        action_df2= pd.concat([action_df2,action_df1])
+        diag_df2  = pd.concat([diag_df2, diag_df1])
+
+### Initialize Keras NN,        
+from keras.models import Sequential
+from keras.layers import Dense
+import pandas as pd
+from sklearn import preprocessing
+
+## Normalize the state dataframe
+xxx = state_df2.values #returns a numpy array
+min_max_scaler = preprocessing.MinMaxScaler()
+xxx_scaled = min_max_scaler.fit_transform(xxx)
+X = pd.DataFrame(xxx_scaled)
+#X=state_df2
+y=action_df2
+model = Sequential()
+model.add(Dense(24, input_dim=24, activation='relu'))
+model.add(Dense(30, activation='relu'))
+model.add(Dense(30, activation='relu'))
+model.add(Dense(30, activation='relu'))
+model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
+model.fit(X, y, epochs=500, batch_size=100) # verbose=0
+
+##Check accuracy of NN
+_, accuracy = model.evaluate(X, y)
+print('Accuracy: %.2f' % (accuracy*100))
+
+##predicting first 5 cases 
+predictions = model.predict_classes(X)
+# summarize the first 5 cases
+for i in range(5):
+	print('%s => %s (expected %s)' % (X[i].tolist(), predictions[i].tolist(), y[i].tolist()))    

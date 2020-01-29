@@ -1,0 +1,6 @@
+OS_LOG=`dmesg --level=err|head -n1`
+if [ `echo $OS_LOG|wc -m` -lt 2  ]; then OS_LOG=0;fi
+
+echo password|su root -c 'dmesg -C' 2>/dev/null
+
+echo $OS_LOG

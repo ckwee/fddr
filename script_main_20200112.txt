@@ -1,0 +1,85 @@
+
+
+l1=[]
+#with open('/home/oracle/fddr/system_vector.txt') as csvfile:
+#   readCSV = csv.reader(decomment(csvfile), delimiter='~')
+#   for row in readCSV:
+#      software_type=int(row[0])
+#      software_service_grp=int(row[1])
+#      cmd=row[3]
+#      print(cmd)
+#      a=int(run_bash(cmd))
+#      l1.append(a)
+#print(l1)
+print (datetime.datetime.now())
+
+print 'DRE log stats =', sm.dre_all_logstats()
+print 'DRE proc stats=', sm.dre_all_processes()
+print 'Diag service fault=', sm.get_system_matrix()
+print 'DRE diagnose metrics=', sm.DRE_diagnostic_metrics()
+
+with open('/home/oracle/fddr/breakfix.txt') as csvfile:
+   readCSV = csv.reader(decomment(csvfile), delimiter='~')
+   for row in readCSV:
+      status=row[0]
+      cmd=row[1]
+      print('***',status,'****  ',cmd)
+      a=run_bash(cmd)
+      #print(a)
+      time.sleep(30)
+      print 'DRE log stats =', sm.dre_all_logstats()
+      print 'DRE proc stats=', sm.dre_all_processes()
+      print 'Diag service fault=', sm.get_system_matrix()
+      print 'DRE diagnose metrics=', sm.DRE_diagnostic_metrics()  
+      time.sleep(30)  
+       
+print ('***************ok',datetime.datetime.now())
+
+
+----------------------------------------------------------------------
+
+from IPython.core.display import display, HTML
+display(HTML("<style>.container { width:100% !important; }</style>"))
+import os
+import time
+import shutil
+import difflib
+import subprocess
+import numpy as np
+import datetime
+import re
+import csv
+import system_matrix_lib as sm
+import pickle
+
+PICKLE_FILE = 'pickle.dat'
+
+def add_to_pickle(path, item):
+    with open(path, 'ab') as file:
+        pickle.dump(item, file, pickle.HIGHEST_PROTOCOL)
+
+
+def read_from_pickle(path):
+    with open(path, 'rb') as file:
+        try:
+            while True:
+                yield pickle.load(file)
+        except EOFError:
+            pass
+
+        
+        
+system_state_v=[]       
+
+system_state_v.append(sm.dre_all_logstats())
+system_state_v.append(sm.dre_all_processes())
+system_state_v.append(sm.get_system_matrix())
+system_state_v.append(sm.DRE_diagnostic_metrics())         
+       
+add_to_pickle(PICKLE_FILE,system_state_v)
+
+for item in read_from_pickle(PICKLE_FILE):
+   print(type(item),item)
+
+os.remove(PICKLE_FILE)        
+

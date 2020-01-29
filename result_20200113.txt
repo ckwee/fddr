@@ -1,0 +1,275 @@
+from IPython.core.display import display, HTML
+display(HTML("<style>.container { width:100% !important; }</style>"))
+
+import os
+import time
+import shutil
+import difflib
+import subprocess
+import numpy as np
+import datetime
+import re
+import csv
+import system_matrix_lib as sm
+
+def run_bash(cmd):
+   try:
+      output=subprocess.check_output(['bash','-c',cmd],stderr=subprocess.STDOUT)
+   except subprocess.CalledProcessError as e:
+      raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+   return output
+
+def decomment(csvfile):
+    for row in csvfile:
+        raw = row.split('#')[0].strip()
+        if raw: yield raw       
+
+l1=[]
+#with open('/home/oracle/fddr/system_vector.txt') as csvfile:
+#   readCSV = csv.reader(decomment(csvfile), delimiter='~')
+#   for row in readCSV:
+#      software_type=int(row[0])
+#      software_service_grp=int(row[1])
+#      cmd=row[3]
+#      print(cmd)
+#      a=int(run_bash(cmd))
+#      l1.append(a)
+
+#print(l1)
+print (datetime.datetime.now())
+
+?print 'DRE log stats =', sm.dre_all_logstats()
+print 'DRE proc stats=', sm.dre_all_processes()
+print 'Diag service fault=', sm.get_system_matrix()
+print 'DRE diagnose metrics=', sm.DRE_diagnostic_metrics()
+
+with open('/home/oracle/fddr/breakfix.txt') as csvfile:
+   readCSV = csv.reader(decomment(csvfile), delimiter='~')
+   for row in readCSV:
+      status=row[0]
+      cmd=row[1]
+      print '\n***',status,'****  ',cmd
+      a=run_bash(cmd)
+      #print(a)
+      time.sleep(30)
+      print 'DRE log stats =', sm.dre_all_logstats()
+      print 'DRE proc stats=', sm.dre_all_processes()
+      print 'Diag service fault=', sm.get_system_matrix()
+      print 'DRE diagnose metrics=', sm.DRE_diagnostic_metrics()  
+      time.sleep(30)  
+
+       
+
+print ('***************ok',datetime.datetime.now())
+
+2020-01-13 10:27:15.769264
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   export ORACLE_SID=DB1 && echo "shutdown immediate;"|sqlplus -s "sys/password as sysdba"
+DRE log stats = [0, 64655058, 76223968, 0, 0, 0, 0, 0]
+DRE proc stats= [1, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[2, 2, 1, 1, 0, 0], [0, 0, 0, 1, 0, 1], [1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** fix ****   export ORACLE_SID=DB1 && echo "startup;"|sqlplus -s "sys/password as sysdba"
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 64351381]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   export ORACLE_SID=DB2 && echo "shutdown immediate;"|sqlplus -s "sys/password as sysdba"
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 1, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[2, 2, 1, 1, 0, 0], [0, 0, 0, 0, 0, 1], [1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** fix ****   export ORACLE_SID=DB2 && echo "startup;"|sqlplus -s "sys/password as sysdba"
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 64351381]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   echo "Alter user splx account lock;"|sqlplus -s "system/password@DB1"
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 1, 0, 0, 0], [0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** fix ****   echo "Alter user splx account unlock;"|sqlplus -s "system/password@DB1"
+DRE log stats = [46968001, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   echo "alter user splx quota 0 on USERS;"|sqlplus -s "system/password@DB1"
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** fix ****   echo "alter user splx quota unlimited on USERS;"|sqlplus -s "system/password@DB1"
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   echo password|su - splx -c $MDIR/shutdown.sh
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 1, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [6, 1, 0, 1, 3, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** fix ****   echo password|su - splx -c $MDIR/startup.sh
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   echo "stop capture"|sp_ctrl
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [1, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** fix ****   echo "start capture"|sp_ctrl
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   echo "stop export"|sp_ctrl
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [2, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** fix ****   echo "start export"|sp_ctrl
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   echo "stop import"|sp_ctrl
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [2, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** fix ****   echo "start import"|sp_ctrl
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   echo "stop post"|sp_ctrl
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [1, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** fix ****   echo "start post"|sp_ctrl
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   echo "stop read"|sp_ctrl
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [1, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** fix ****   echo "start read"|sp_ctrl
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   mv -f $ORACLE_HOME/network/admin/listener.ora $ORACLE_HOME/network/admin/listener.ora_bak
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** fix ****   cp -f $ORACLE_HOME/network/admin/listener.ora.orig $ORACLE_HOME/network/admin/listener.ora
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   $ORACLE_HOME/bin/lsnrctl stop
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 1, 1, 0, 0]
+Diag service fault= [[0, 4, 2, 2, 0, 0], [0, 0, 0, 0, 0, 2], [2, 2, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+
+*** fix ****   $ORACLE_HOME/bin/lsnrctl start
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 4, 2, 2, 0, 0], [0, 0, 0, 0, 0, 2], [2, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   mv -f $ORACLE_HOME/network/admin/tnsnames.ora $ORACLE_HOME/network/admin/tnsnames.ora_bak
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 64351381]
+DRE proc stats= [0, 0, 0, 0, 1, 1, 0, 0]
+Diag service fault= [[0, 4, 2, 2, 0, 0], [0, 0, 0, 0, 0, 2], [2, 2, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+
+*** fix ****   mv -f $ORACLE_HOME/network/admin/tnsnames.ora.orig $ORACLE_HOME/network/admin/tnsnames.ora
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   echo password|su - root -c "systemctl stop sshd.service"
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   echo password|su - root -c "systemctl start sshd.service"
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   echo password|su - root -c "passwd -l splx"
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0]
+
+*** fix ****   echo password|su - root -c "passwd -u splx"
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   echo password|su - root -c "passwd -l oracle"
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
+
+*** fix ****   echo password|su - root -c "passwd -u oracle"
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+*** break ****   echo password|su - root -c "ifconfig enp0s3 down"
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
+
+*** fix ****   echo password|su - root -c "ifconfig enp0s3 up"
+DRE log stats = [0, 0, 0, 0, 0, 0, 0, 0]
+DRE proc stats= [0, 0, 0, 0, 0, 0, 0, 0]
+Diag service fault= [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+DRE diagnose metrics= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+('***************ok', datetime.datetime(2020, 1, 13, 11, 10, 13, 44045))

@@ -1,0 +1,39 @@
+import numpy as np
+import csv
+import subprocess
+np.set_printoptions(linewidth=110)
+
+def service_status_change(state):
+    flag=1
+    if state==1:
+       flag=0
+    return flag
+
+def decomment(csvfile):
+    for row in csvfile:
+        raw = row.split('#')[0].strip()
+        if raw: yield raw
+
+def run_bash(cmd):
+   try:
+      output=subprocess.check_output(['bash','-c',cmd],stderr=subprocess.STDOUT)
+   except subprocess.CalledProcessError as e:
+      raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+   return output
+
+#testfile '/home/oracle/saplx/test.txt'
+line=0
+system_matrix= [[0 for col in range(6)] for row in range(5)] #initialize
+with open('/home/oracle/fddr/system_vector.txt') as csvfile:
+    readCSV = csv.reader(decomment(csvfile), delimiter='~')
+    for row in readCSV:
+        line+=1
+        software_type=int(row[0])
+        software_service_grp=int(row[1])
+        cmd=row[3]
+        a=run_bash(cmd)
+        status_flag=service_status_change(int(a.rstrip()))
+        #print(software_type, software_service_grp, int(a.rstrip()), status_flag)
+        system_matrix[software_type][software_service_grp]+=status_flag
+
+print(system_matrix)

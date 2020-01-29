@@ -1,0 +1,54 @@
+###Oracle DB1 and 2 instance
+break~export ORACLE_SID=DB1 && echo "shutdown immediate;"|sqlplus -s "sys/password as sysdba"
+fix~export ORACLE_SID=DB1 && echo "startup;"|sqlplus -s "sys/password as sysdba"
+break~export ORACLE_SID=DB2 && echo "shutdown immediate;"|sqlplus -s "sys/password as sysdba"
+fix~export ORACLE_SID=DB2 && echo "startup;"|sqlplus -s "sys/password as sysdba" 
+#
+###oracle user, splx
+break~echo "Alter user splx account lock;"|sqlplus -s "system/password@DB1"
+fix~echo "Alter user splx account unlock;"|sqlplus -s "system/password@DB1"
+#
+###user quota on tablespace
+break~echo "alter user splx quota 0 on USERS;"|sqlplus -s "system/password@DB1"
+fix~echo "alter user splx quota unlimited on USERS;"|sqlplus -s "system/password@DB1"
+#
+###shareplex instance & processes
+break~echo password|su - splx -c $MDIR/shutdown.sh
+fix~echo password|su - splx -c $MDIR/startup.sh
+#
+###shareplex services operation
+break~echo "stop capture"|sp_ctrl
+fix~echo "start capture"|sp_ctrl
+break~echo "stop export"|sp_ctrl
+fix~echo "start export"|sp_ctrl
+break~echo "stop import"|sp_ctrl
+fix~echo "start import"|sp_ctrl
+break~echo "stop post"|sp_ctrl 
+fix~echo "start post"|sp_ctrl 
+break~echo "stop read"|sp_ctrl
+fix~echo "start read"|sp_ctrl
+#
+###listener services & listener.ora
+break~mv -f $ORACLE_HOME/network/admin/listener.ora $ORACLE_HOME/network/admin/listener.ora_bak 
+fix~cp -f $ORACLE_HOME/network/admin/listener.ora.orig $ORACLE_HOME/network/admin/listener.ora
+break~$ORACLE_HOME/bin/lsnrctl stop
+fix~$ORACLE_HOME/bin/lsnrctl start
+#
+###tnsnames.ora
+break~mv -f $ORACLE_HOME/network/admin/tnsnames.ora $ORACLE_HOME/network/admin/tnsnames.ora_bak
+fix~mv -f $ORACLE_HOME/network/admin/tnsnames.ora.orig $ORACLE_HOME/network/admin/tnsnames.ora
+#
+###ssh services
+break~echo password|su - root -c "systemctl stop sshd.service"
+break~echo password|su - root -c "systemctl start sshd.service"
+#
+###user account
+break~echo password|su - root -c "passwd -l splx"
+fix~echo password|su - root -c "passwd -u splx"
+break~echo password|su - root -c "passwd -l oracle"
+fix~echo password|su - root -c "passwd -u oracle"
+#
+###network card
+break~echo password|su - root -c "ifconfig enp0s3 down"
+fix~echo password|su - root -c "ifconfig enp0s3 up"
+

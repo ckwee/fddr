@@ -1,0 +1,82 @@
+#OracleDB
+#PMON,SMON,DB’s mode is open,DB available for use,Blocking session,splx account not locked,Splx has quota on splx tablespace,Splx tablespae’s free > 20%
+#Databases		memory process		00
+#			Status			01
+#			Account security	02
+#			storage space		03
+0~0~0~if ps aux | grep -q "ora_smon_DB1" ; then echo "1" ; else echo “0”; fi~	Check for DB1's smon 
+0~0~0~if ps aux | grep -q "ora_0mon_DB1" ; then echo "1" ; else echo “0”; fi~	Check for DB2's smon
+0~0~0~if ps aux | grep -q "ora_smon_DB2" ; then echo "1" ; else echo “0”; fi~	Check for DB1's pmon
+0~0~0~if ps aux | grep -q "ora_pmon_DB2" ; then echo "1" ; else echo “0”; fi~	Check for DB2's pmon
+0~1~0~if [ -n "$(pgrep ora_smon_db1)" ]; then echo -e "SET PAGESIZE 0 FEEDBACK OFF; \n select instance_name from v\$instance;"|sqlplus -s system/password@DB1|wc -l; else echo 0;fi~ if DB1 is open
+0~1~0~if [ -n "$(pgrep ora_smon_db1)" ]; then echo -e "SET PAGESIZE 0 FEEDBACK OFF; \n select instance_name from v\$instance;"|sqlplus -s system/password@DB2|wc -l; else echo 0;fi~ if DB2 is open
+0~1~0~if [ -n "$(pgrep ora_smon_db1)" ]; then echo -e "SET PAGESIZE 0 FEEDBACK OFF;\n select ltrim(decode(count(*),0,1,0)) from v\$session where blocking_session is not NULL;"|sqlplus -s system/password@DB1; else echo 0;fi~Check any session blocking on DB1
+0~1~0~if [ -n "$(pgrep ora_smon_db1)" ]; then echo -e "SET PAGESIZE 0 FEEDBACK OFF;\n select ltrim(decode(count(*),0,1,0)) from v\$session where blocking_session is not NULL;"|sqlplus -s system/password@DB2; else echo 0;fi~Check any session blocking on DB2
+0~2~0~if [ -n "$(pgrep ora_smon_db1)" ]; then echo -e "SET PAGESIZE 0 FEEDBACK OFF;\n select ltrim(decode(account_status,'OPEN',1,0)) from dba_users where username='SPLX';" | sqlplus -s system/password@linux:1521/DB1; else echo 0;fi~SPLX account is available on DB1
+0~2~0~if [ -n "$(pgrep ora_smon_db1)" ]; then echo -e "SET PAGESIZE 0 FEEDBACK OFF;\n select ltrim(decode(account_status,'OPEN',1,0)) from dba_users where username='SPLX';" | sqlplus -s system/password@linux:1521/DB2; else echo 0;fi~SPLX account is available on Db2
+0~3~0~if [ -n "$(pgrep ora_smon_db1)" ]; then echo -e "SET PAGESIZE 0 FEEDBACK OFF;\n select case when (1-used_percent) < 0.2 then ltrim(0) else ltrim(1) end from dba_tablespace_usage_metrics where tablespace_name='USERS';" | sqlplus -s system/password@linux:1521/DB1; else echo 0;fi~check USERS TBLSP free space on DB1
+0~3~0~if [ -n "$(pgrep ora_smon_db1)" ]; then echo -e "SET PAGESIZE 0 FEEDBACK OFF;\n select case when (1-used_percent) < 0.2 then ltrim(0) else ltrim(1) end from dba_tablespace_usage_metrics where tablespace_name='USERS';" | sqlplus -s system/password@linux:1521/DB2; else echo 0;fi~check USERS TBLSP free space on DB2
+#
+#
+##Shareplex
+#Sp_cop & process are running,sp console is responsive,Exp-imp-post are running,Capture-export-import-post-read status = Running,backlog in splx queues, src Splx can connect to source DB,Target Splx can connect to target DB
+#Replicating tools	main processes		10
+#			Sp console		11
+#			queues operation	12
+#			Config file 		13
+#			Queues’ backlogs	14
+#			DB accessibility	15
+1~0~1~if ps aux | grep -q "sp_cop" ; then echo "1" ; else echo “no result”; fi~Check if sp_cop process is up 
+1~0~1~if ps aux | grep -q "sp_ocap" ; then echo "1" ; else echo “no result”; fi~Check if sp_ocap process is up 
+1~0~1~if ps aux | grep -q "sp_opst_mt" ; then echo "1" ; else echo “no result”; fi~Check if sp_opst_mt process is up 
+1~0~1~if ps aux | grep -q "sp_xport" ; then echo "1" ; else echo “no result”; fi~Check if sp_xport process is up 
+1~0~1~if ps aux | grep -q "sp_ordr" ; then echo "1" ; else echo “no result”; fi~Check if sp_ordr process is up 
+1~0~1~if ps aux | grep -q "sp_mport" ; then echo "1" ; else echo “no result”; fi~Check if sp_mport process is up 
+#
+1~1~1~if sp_ctrl status 2> /dev/null|grep -q "Running" ; then echo "1" ; else echo "0"; fi~Check if sp_cop is responsive
+#
+1~2~1~if sp_ctrl status 2>/dev/null|tail -n+5|head -n-5|grep -i capture|awk '{ print $2 }'|grep -q 'Stopped' ; then echo "no result"; else echo "1"; fi~Check if capture state is running
+1~2~1~if sp_ctrl status 2>/dev/null|tail -n+5|head -n-5|grep -i read|awk '{ print $2 }'|grep -q 'Stopped' ; then echo "no result"; else echo "1"; fi~Check if read state is running
+1~2~1~if sp_ctrl status 2>/dev/null|tail -n+5|head -n-5|grep -i export|awk '{ print $2 }'|grep -q 'Stopped' ; then echo "no result"; else echo "1"; fi~Check if export state is running
+1~2~1~if sp_ctrl status 2>/dev/null|tail -n+5|head -n-5|grep -i import|awk '{ print $2 }'|grep -q 'Stopped' ; then echo "no result"; else echo "1"; fi~Check if import state is running
+1~2~1~if sp_ctrl status 2>/dev/null|tail -n+5|head -n-5|grep -i post|awk '{ print $2 }'|grep -q 'Stopped' ; then echo "no result"; else echo "1"; fi~Check if post state is running
+#
+1~3~1~if sp_ctrl show config 2>/dev/null|grep -q 'Actid' ; then echo "1"; else echo "no result"; fi~Query if config file is active
+#
+1~4~1~if sp_ctrl status 2> /dev/null|grep -q "Running" ; then if [ $(sp_ctrl qstatus|grep -A 3  -i post|grep "Backlog"|awk '{ print $3 }'|awk '{s+=$3} END {print s}') -eq 0 ]; then echo "1";else echo "0";fi else echo "0"; fi~ Check for post backlog
+1~4~1~if sp_ctrl status 2> /dev/null|grep -q "Running" ; then if [ $(sp_ctrl qstatus|grep -A 3  -i post|grep "Backlog"|awk '{ print $3 }'|awk '{s+=$3} END {print s}') -eq 0 ]; then echo "1";else echo "0";fi else echo "0"; fi~ Check for capture backlog
+1~4~1~if sp_ctrl status 2> /dev/null|grep -q "Running" ; then if [ $(sp_ctrl qstatus|grep -A 3  -i post|grep "Backlog"|awk '{ print $3 }'|awk '{s+=$3} END {print s}') -eq 0 ]; then echo "1";else echo "0";fi else echo "0"; fi~ Check for export backlog
+#
+1~5~1~if [ -n "$(pgrep ora_smon_db1)" ]; then echo -e "SET PAGESIZE 0 FEEDBACK OFF; \n select ltrim(1) from dual;"|sqlplus -s splx/splx@DB1; else echo 0;fi~ if splx can reach DB1
+1~5~1~if [ -n "$(pgrep ora_smon_db2)" ]; then echo -e "SET PAGESIZE 0 FEEDBACK OFF; \n select ltrim(1) from dual;"|sqlplus -s splx/splx@DB2; else echo 0;fi~ if splx can reach DB2
+#
+#
+#Networking;
+#listener and ping,Source & Target Listener is running,Source host connect to target DB via sqlplus,Target host connect to source DB via sqlplus,Socket_test from source to target,Socket_test from target to source,Host 1 can ping host 2,Host 2 can ping host 1
+#Network connectivity	Databases’ listeners	20
+#			Replication tool	21
+#			VM hosts		22
+2~0~3~if ps aux | grep -q "tnslsnr LISTENER" ; then echo "1" ; else echo “0”; fi~	Database Listener is running or not.
+2~0~3~if [ -n "$(pgrep ora_smon_db1)" ]; then echo -e "SET PAGESIZE 0 FEEDBACK OFF; \n select ltrim(1) from dual;"|sqlplus -s system/password@DB1; else echo 0;fi~Check if sqlplus is connectable or not
+2~0~3~if [ -n "$(pgrep ora_smon_db1)" ]; then echo -e "SET PAGESIZE 0 FEEDBACK OFF; \n select ltrim(1) from dual;"|sqlplus -s system/password@DB2; else echo 0;fi~Check if sqlplus is connectable or not
+2~1~3~if tnsping DB1 2>/dev/null|grep -q -i ok ; then echo "1"; else echo "0";fi~if tnsping can reach DB1
+2~1~3~if tnsping DB2 2>/dev/null|grep -q -i ok ; then echo "1"; else echo "0";fi~if tnsping can reach DB2
+2~2~3~if ping -c1 localhost 2>/dev/null|grep -q -i icmp ; then echo "1"; else echo "0";fi~if ping localhost VM
+2~2~3~if ping -c1 localhost 2>/dev/null|grep -q -i icmp ; then echo "1"; else echo "0";fi~if ping localhost VM
+#
+#
+#linux OS
+#Unix account are open & not locked on host1,/ has free space > 10% on host1,Ifconfig enps03 is up on host1,Vmstat < 95% used on host1,Vmstat < 95% used on host2
+#Host OS		unix account status	30
+#			storage space		31
+#			network card status	32
+#			memory utilization	33
+3~0~4~if [ -n "$(echo password|su root -c 'passwd --status splx'  2>/dev/null|grep -i locked)" ] ; then echo "0"; else echo "1";fi~check if unix-splx is locked
+3~0~4~if [ -n "$(echo password|su root -c 'passwd --status oracle'  2>/dev/null|grep -i locked)" ] ; then echo "0"; else echo "1";fi~check if unix-oracle is locked
+3~1~4~if [ `df -h|grep -i root|awk '{print $5}'|tr -d '%'` -lt 99 ]; then echo 1; else echo 0;fi~check if root partition is full
+3~2~4~if [ `ifconfig enp0s3|grep -i up|wc -l` -eq 1 ]; then echo 1; else echo 0;fi~check if the network card is up
+3~3~4~echo "$(free -m|grep -i mem|awk '{ print $3 / $2 }') < 0.9"|bc ~check if there is free memory
+
+
+
+
